@@ -2,177 +2,53 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>e621 Image Viewer</title>
+  <title>app.rule34.dev Image Viewer</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #181818;
-      color: #f0f0f0;
-      margin: 0;
-      padding: 0;
-      min-height: 100vh;
-    }
-    h1 {
-      text-align: center;
-      margin: 1.5em 0 .5em 0;
-      font-size: 2em;
-    }
-    #searchForm {
-      display: flex;
-      justify-content: center;
-      margin-bottom: 1em;
-    }
-    #searchInput {
-      width: 300px;
-      padding: 0.5em;
-      font-size: 1em;
-      border-radius: 3px 0 0 3px;
-      border: none;
-      outline: none;
-    }
-    #searchForm button {
-      padding: 0.5em 1.2em;
-      font-size: 1em;
-      border: none;
-      background: #0077ff;
-      color: #fff;
-      border-radius: 0 3px 3px 0;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    #searchForm button:hover {
-      background: #005fcc;
-    }
-    #gallery {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 1em;
-      padding: 1em;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-    .thumbnail {
-      width: 100%;
-      cursor: pointer;
-      border-radius: 5px;
-      transition: transform 0.15s;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-      object-fit: cover;
-      background: #222;
-    }
-    .thumbnail:hover {
-      transform: scale(1.05);
-    }
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 100;
-      padding-top: 60px;
-      left: 0; top: 0;
-      width: 100%; height: 100%;
-      overflow: auto;
-      background-color: rgba(0,0,0,0.92);
-    }
-    .modal-content {
-      margin: auto;
-      display: block;
-      max-width: 90vw;
-      max-height: 80vh;
-      border-radius: 6px;
-      box-shadow: 0 4px 32px rgba(0,0,0,0.5);
-    }
-    #caption {
-      margin: 1em auto;
-      text-align: center;
-      color: #ccc;
-      max-width: 900px;
-      font-size: 1.1em;
-      word-break: break-all;
-    }
-    .close {
-      position: absolute;
-      top: 30px; right: 45px;
-      color: #fff;
-      font-size: 2.5em;
-      font-weight: bold;
-      cursor: pointer;
-      user-select: none;
-      transition: color 0.2s;
-    }
-    .close:hover, .close:focus {
-      color: #e74c3c;
-    }
-    #ratingFilter {
-      margin-left: 1em;
-      font-size: 1em;
-      border-radius: 3px;
-      border: none;
-      padding: 0.3em 1em;
-      background: #222;
-      color: #eee;
-    }
+    body { font-family: Arial, sans-serif; background: #181818; color: #f0f0f0; margin: 0; }
+    h1 { text-align: center; margin: 1.5em 0 .5em 0; font-size: 2em; }
+    #searchForm { display: flex; justify-content: center; margin-bottom: 1em; }
+    #searchInput { width: 300px; padding: 0.5em; font-size: 1em; border-radius: 3px 0 0 3px; border: none; outline: none; }
+    #searchForm button { padding: 0.5em 1.2em; font-size: 1em; border: none; background: #0077ff; color: #fff; border-radius: 0 3px 3px 0; cursor: pointer; transition: background 0.2s; }
+    #searchForm button:hover { background: #005fcc; }
+    #gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1em; padding: 1em; max-width: 1200px; margin: 0 auto; }
+    .thumbnail { width: 100%; cursor: pointer; border-radius: 5px; transition: transform 0.15s; box-shadow: 0 2px 10px rgba(0,0,0,0.2); object-fit: cover; background: #222; }
+    .thumbnail:hover { transform: scale(1.05); }
+    .modal { display: none; position: fixed; z-index: 100; padding-top: 60px; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.92); }
+    .modal-content { margin: auto; display: block; max-width: 90vw; max-height: 80vh; border-radius: 6px; box-shadow: 0 4px 32px rgba(0,0,0,0.5); }
+    #caption { margin: 1em auto; text-align: center; color: #ccc; max-width: 900px; font-size: 1.1em; }
+    .close { position: absolute; top: 30px; right: 45px; color: #fff; font-size: 2.5em; font-weight: bold; cursor: pointer; user-select: none; transition: color 0.2s; }
+    .close:hover, .close:focus { color: #e74c3c; }
   </style>
 </head>
 <body>
-  <h1>e621 Image Viewer</h1>
+  <h1>app.rule34.dev Image Viewer</h1>
   <form id="searchForm">
     <input type="text" id="searchInput" placeholder="Enter tags (space-separated)" required>
-    <select id="ratingFilter">
-      <option value="">All ratings</option>
-      <option value="safe">Safe</option>
-      <option value="questionable">Questionable</option>
-      <option value="explicit">Explicit</option>
-    </select>
     <button type="submit">Search</button>
   </form>
   <div id="gallery"></div>
-
   <div id="modal" class="modal">
     <span class="close" id="closeModal">&times;</span>
     <img class="modal-content" id="modalImg">
     <div id="caption"></div>
   </div>
-
   <script>
     const form = document.getElementById('searchForm');
     const input = document.getElementById('searchInput');
-    const ratingFilter = document.getElementById('ratingFilter');
     const gallery = document.getElementById('gallery');
     const modal = document.getElementById('modal');
     const modalImg = document.getElementById('modalImg');
     const caption = document.getElementById('caption');
     const closeModal = document.getElementById('closeModal');
 
-    // User agent for API compliance
-    const userAgent = "e621-viewer-by-yourname/1.0 (https://github.com/yourname/yourrepo)";
-
-    function ratingTag(rating) {
-      switch (rating) {
-        case "s": return "Safe";
-        case "q": return "Questionable";
-        case "e": return "Explicit";
-        default: return rating;
-      }
-    }
-
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      let tags = input.value.trim();
-      if (ratingFilter.value) {
-        tags += (tags ? " " : "") + "rating:" + ratingFilter.value;
-      }
+      const tags = input.value.trim().replace(/\s+/g, ' ');
       if (!tags) return;
       gallery.innerHTML = '<p>Loading...</p>';
       try {
-        // e621: API is CORS-friendly
-        const url = `https://e621.net/posts.json?limit=40&tags=${encodeURIComponent(tags)}`;
-        const resp = await fetch(url, {
-          headers: {
-            'Accept': 'application/json',
-            'User-Agent': userAgent
-          }
-        });
+        const resp = await fetch(`https://api.rule34.dev/posts?limit=60&tags=${encodeURIComponent(tags)}`);
         if (!resp.ok) throw new Error('API error');
         const data = await resp.json();
         if (!Array.isArray(data.posts) || data.posts.length === 0) {
@@ -181,24 +57,16 @@
         }
         gallery.innerHTML = '';
         data.posts.forEach(post => {
-          if (post.preview && post.preview.url && post.file && post.file.url) {
+          if (post.sample_url && post.file_url) {
             const img = document.createElement('img');
-            img.src = post.preview.url;
-            img.alt = (post.tags && post.tags.general ? post.tags.general.join(' ') : '') || '';
+            img.src = post.sample_url;
+            img.alt = post.tags.join(" ");
             img.className = 'thumbnail';
             img.loading = 'lazy';
             img.addEventListener('click', () => {
               modal.style.display = 'block';
-              modalImg.src = post.file.url;
-              caption.innerHTML = `
-                <b>ID:</b> ${post.id} &nbsp;
-                <b>Rating:</b> ${ratingTag(post.rating)}<br>
-                <b>Tags:</b> ${
-                  Object.values(post.tags)
-                    .reduce((arr, tags) => arr.concat(tags), [])
-                    .join(', ')
-                }
-              `;
+              modalImg.src = post.file_url;
+              caption.textContent = post.tags.join(', ');
             });
             gallery.appendChild(img);
           }
