@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Rule34 Viewer</title>
+  <style>
+    body {
+      background: #111;
+      color: white;
+      font-family: sans-serif;
+      padding: 1rem;
+      text-align: center;
+    }
+
+    input, button {
+      padding: 0.5rem;
+      font-size: 1rem;
+      margin: 0.25rem;
+      border-radius: 5px;
+      border: none;
+    }
+
+    button {
+      background: #333;
+      color: white;
+      cursor: pointer;
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 10px;
+      margin-top: 1rem;
+    }
+
+    .gallery img {
+      width: 100%;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+
+    .gallery img:hover {
+      transform: scale(1.05);
+    }
+
+    .modal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      display: none;
+    }
+
+    .modal img {
+      max-width: 90%;
+      max-height: 90%;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Rule34.xxx Viewer</h1>
+  <input id="tagInput" placeholder="Enter tag (e.g. samus)" />
+  <button onclick="fetchImages()">Search</button>
+
+  <div class="gallery" id="gallery"></div>
+
+  <div class="modal" id="modal" onclick="this.style.display='none'">
+    <img id="modalImg" />
+  </div>
+
+  <script>
+    async function fetchImages() {
+      const tag = document.getElementById('tagInput').value.trim().replace(/\s+/g, '_');
+      const url = `https://corsproxy.io/?https://rule34.xxx/index.php?page=dapi&s=post&q=index&limit=30&tags=${encodeURIComponent(tag)}`;
+
+      const res = await fetch(url);
+      const text = await res.text();
+      const parser = new DOMParser();
+      const xml = parser.parseFromString(text, "text/xml");
+      const posts = Array.from(xml.getElementsByTagName("post"));
+
+      const gallery = document.getElementById("gallery");
+      gallery.innerHTML = "";
+
+      posts.forEach(post => {
+        const previewUrl = post.getAttribute("preview_url");
+        const fileUrl = post.getAttribute("file_url");
+
+        const img = document.createElement("img");
+        img.src = previewUrl;
+        img.alt = "Preview";
+        img.onclick = () => {
+          document.getElementById("modalImg").src = fileUrl;
+          document.getElementById("modal").style.display = "flex";
+        };
+        gallery.appendChild(img);
+      });
+    }
+  </script>
+</body>
+</html>
