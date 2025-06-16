@@ -1,130 +1,193 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Rule34 Viewer</title>
+  <meta charset="UTF-8">
+  <title>Rule34.xxx Image Viewer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
-      background: #111;
-      color: #fff;
-      font-family: sans-serif;
+      font-family: Arial, sans-serif;
+      background: #181818;
+      color: #f0f0f0;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+    }
+
+    h1 {
       text-align: center;
-      padding: 2rem;
+      margin: 1.5em 0 .5em 0;
+      font-size: 2em;
     }
 
-    input, button {
-      padding: 0.5rem;
-      font-size: 1rem;
-      border-radius: 5px;
+    #searchForm {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 1em;
+    }
+
+    #searchInput {
+      width: 300px;
+      padding: 0.5em;
+      font-size: 1em;
+      border-radius: 3px 0 0 3px;
       border: none;
-      margin: 0.25rem;
+      outline: none;
     }
 
-    button {
-      background: #333;
-      color: white;
+    #searchForm button {
+      padding: 0.5em 1.2em;
+      font-size: 1em;
+      border: none;
+      background: #0077ff;
+      color: #fff;
+      border-radius: 0 3px 3px 0;
       cursor: pointer;
+      transition: background 0.2s;
     }
 
-    .gallery {
-      margin-top: 2rem;
+    #searchForm button:hover {
+      background: #005fcc;
+    }
+
+    #gallery {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 10px;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1em;
+      padding: 1em;
       max-width: 1200px;
-      margin-left: auto;
-      margin-right: auto;
+      margin: 0 auto;
     }
 
-    .gallery img {
+    .thumbnail {
       width: 100%;
-      border-radius: 5px;
-      transition: transform 0.2s ease;
       cursor: pointer;
+      border-radius: 5px;
+      transition: transform 0.15s;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      object-fit: cover;
+      background: #222;
     }
 
-    .gallery img:hover {
+    .thumbnail:hover {
       transform: scale(1.05);
     }
 
     .modal {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100vw; height: 100vh;
-      background: rgba(0, 0, 0, 0.85);
       display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 999;
+      position: fixed;
+      z-index: 100;
+      padding-top: 60px;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.92);
     }
 
-    .modal img {
-      max-width: 90%;
-      max-height: 90%;
-      border-radius: 10px;
+    .modal-content {
+      margin: auto;
+      display: block;
+      max-width: 90vw;
+      max-height: 80vh;
+      border-radius: 6px;
+      box-shadow: 0 4px 32px rgba(0,0,0,0.5);
+    }
+
+    #caption {
+      margin: 1em auto;
+      text-align: center;
+      color: #ccc;
+      max-width: 900px;
+      font-size: 1.1em;
+    }
+
+    .close {
+      position: absolute;
+      top: 30px; right: 45px;
+      color: #fff;
+      font-size: 2.5em;
+      font-weight: bold;
+      cursor: pointer;
+      user-select: none;
+      transition: color 0.2s;
+    }
+
+    .close:hover, .close:focus {
+      color: #e74c3c;
     }
   </style>
 </head>
 <body>
-  <h1>Rule34 Viewer</h1>
-  <p>Search tag (e.g. <code>samus</code>, <code>midna</code>, <code>pokemon</code>):</p>
-  <input id="tagInput" type="text" placeholder="Enter tag here" />
-  <button onclick="fetchImages()">Search</button>
+  <h1>Rule34.xxx Image Viewer</h1>
+  <form id="searchForm">
+    <input type="text" id="searchInput" placeholder="Enter tags (space-separated)" required>
+    <button type="submit">Search</button>
+  </form>
+  <div id="gallery"></div>
 
-  <div class="gallery" id="gallery"></div>
-
-  <div class="modal" id="modal" onclick="closeModal()">
-    <img id="modalImg" />
+  <div id="modal" class="modal">
+    <span class="close" id="closeModal">&times;</span>
+    <img class="modal-content" id="modalImg">
+    <div id="caption"></div>
   </div>
 
   <script>
-    async function fetchImages() {
-      const tag = document.getElementById('tagInput').value.trim().replace(/\s+/g, '_');
-      const gallery = document.getElementById('gallery');
-      gallery.innerHTML = "Loading...";
+    const form = document.getElementById('searchForm');
+    const input = document.getElementById('searchInput');
+    const gallery = document.getElementById('gallery');
+    const modal = document.getElementById('modal');
+    const modalImg = document.getElementById('modalImg');
+    const caption = document.getElementById('caption');
+    const closeModal = document.getElementById('closeModal');
 
-      const apiURL = `https://corsproxy.io/?https://rule34.xxx/index.php?page=dapi&s=post&q=index&limit=30&tags=${encodeURIComponent(tag)}`;
-
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const tags = input.value.trim().replace(/\s+/g, '+');
+      if (!tags) return;
+      gallery.innerHTML = '<p>Loading...</p>';
       try {
-        const res = await fetch(apiURL);
-        const xmlText = await res.text();
-        const parser = new DOMParser();
-        const xml = parser.parseFromString(xmlText, "application/xml");
-        const posts = Array.from(xml.getElementsByTagName("post"));
-
-        if (posts.length === 0) {
-          gallery.innerHTML = "<p>No results found for that tag.</p>";
+        // Rule34 API: returns up to 100 posts max per request
+        const resp = await fetch(`https://api.rule34.xxx/index.php?page=dapi&s=post&q=index&json=1&limit=60&tags=${encodeURIComponent(tags)}`);
+        if (!resp.ok) throw new Error('API error');
+        const data = await resp.json();
+        if (!Array.isArray(data) || data.length === 0) {
+          gallery.innerHTML = '<p>No results found.</p>';
           return;
         }
-
-        gallery.innerHTML = "";
-        posts.forEach(post => {
-          const preview = post.getAttribute("preview_url");
-          const full = post.getAttribute("file_url");
-
-          const img = document.createElement("img");
-          img.src = preview;
-          img.alt = "Preview";
-          img.onclick = () => openModal(full);
-
-          gallery.appendChild(img);
+        gallery.innerHTML = '';
+        data.forEach(post => {
+          if (post.preview_url && post.file_url) {
+            const img = document.createElement('img');
+            img.src = post.preview_url.startsWith('http') ? post.preview_url : `https:${post.preview_url}`;
+            img.alt = post.tags;
+            img.className = 'thumbnail';
+            img.loading = 'lazy';
+            img.addEventListener('click', () => {
+              modal.style.display = 'block';
+              modalImg.src = post.file_url.startsWith('http') ? post.file_url : `https:${post.file_url}`;
+              caption.textContent = post.tags || '';
+            });
+            gallery.appendChild(img);
+          }
         });
       } catch (err) {
-        gallery.innerHTML = "<p>❌ Error loading images. Rule34 might be blocking requests or the proxy is down.</p>";
-        console.error(err);
+        gallery.innerHTML = `<p>Error fetching images: ${err.message}</p>`;
       }
-    }
+    });
 
-    function openModal(url) {
-      const modal = document.getElementById("modal");
-      const modalImg = document.getElementById("modalImg");
-      modalImg.src = url;
-      modal.style.display = "flex";
-    }
+    closeModal.onclick = function() {
+      modal.style.display = 'none';
+      modalImg.src = '';
+      caption.textContent = '';
+    };
 
-    function closeModal() {
-      document.getElementById("modal").style.display = "none";
-    }
+    window.onclick = function(event) {
+      if (event.target == modal) {
+        modal.style.display = 'none';
+        modalImg.src = '';
+        caption.textContent = '';
+      }
+    };
   </script>
 </body>
 </html>
