@@ -147,7 +147,9 @@
       gallery.innerHTML = '<p>Loading...</p>';
       try {
         // Rule34 API: returns up to 100 posts max per request
-        const resp = await fetch(`https://api.rule34.xxx/index.php?page=dapi&s=post&q=index&json=1&limit=60&tags=${encodeURIComponent(tags)}`);
+        const corsProxy = "https://corsproxy.io/?";
+        const apiUrl = `https://api.rule34.xxx/index.php?page=dapi&s=post&q=index&json=1&limit=60&tags=${encodeURIComponent(tags)}`;
+        const resp = await fetch(corsProxy + encodeURIComponent(apiUrl));
         if (!resp.ok) throw new Error('API error');
         const data = await resp.json();
         if (!Array.isArray(data) || data.length === 0) {
