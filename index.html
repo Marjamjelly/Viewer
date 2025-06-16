@@ -6,18 +6,18 @@
   <style>
     body {
       background: #111;
-      color: white;
+      color: #fff;
       font-family: sans-serif;
-      padding: 1rem;
       text-align: center;
+      padding: 2rem;
     }
 
     input, button {
       padding: 0.5rem;
       font-size: 1rem;
-      margin: 0.25rem;
       border-radius: 5px;
       border: none;
+      margin: 0.25rem;
     }
 
     button {
@@ -27,17 +27,20 @@
     }
 
     .gallery {
+      margin-top: 2rem;
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
       gap: 10px;
-      margin-top: 1rem;
+      max-width: 1200px;
+      margin-left: auto;
+      margin-right: auto;
     }
 
     .gallery img {
       width: 100%;
       border-radius: 5px;
-      cursor: pointer;
       transition: transform 0.2s ease;
+      cursor: pointer;
     }
 
     .gallery img:hover {
@@ -47,12 +50,12 @@
     .modal {
       position: fixed;
       top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.85);
-      display: flex;
+      width: 100vw; height: 100vh;
+      background: rgba(0, 0, 0, 0.85);
+      display: none;
       align-items: center;
       justify-content: center;
-      display: none;
+      z-index: 999;
     }
 
     .modal img {
@@ -63,43 +66,64 @@
   </style>
 </head>
 <body>
-  <h1>Rule34.xxx Viewer</h1>
-  <input id="tagInput" placeholder="Enter tag (e.g. samus)" />
+  <h1>Rule34 Viewer</h1>
+  <p>Search tag (e.g. <code>samus</code>, <code>midna</code>, <code>pokemon</code>):</p>
+  <input id="tagInput" type="text" placeholder="Enter tag here" />
   <button onclick="fetchImages()">Search</button>
 
   <div class="gallery" id="gallery"></div>
 
-  <div class="modal" id="modal" onclick="this.style.display='none'">
+  <div class="modal" id="modal" onclick="closeModal()">
     <img id="modalImg" />
   </div>
 
   <script>
     async function fetchImages() {
       const tag = document.getElementById('tagInput').value.trim().replace(/\s+/g, '_');
-      const url = `https://corsproxy.io/?https://rule34.xxx/index.php?page=dapi&s=post&q=index&limit=30&tags=${encodeURIComponent(tag)}`;
+      const gallery = document.getElementById('gallery');
+      gallery.innerHTML = "Loading...";
 
-      const res = await fetch(url);
-      const text = await res.text();
-      const parser = new DOMParser();
-      const xml = parser.parseFromString(text, "text/xml");
-      const posts = Array.from(xml.getElementsByTagName("post"));
+      const apiURL = `https://corsproxy.io/?https://rule34.xxx/index.php?page=dapi&s=post&q=index&limit=30&tags=${encodeURIComponent(tag)}`;
 
-      const gallery = document.getElementById("gallery");
-      gallery.innerHTML = "";
+      try {
+        const res = await fetch(apiURL);
+        const xmlText = await res.text();
+        const parser = new DOMParser();
+        const xml = parser.parseFromString(xmlText, "application/xml");
+        const posts = Array.from(xml.getElementsByTagName("post"));
 
-      posts.forEach(post => {
-        const previewUrl = post.getAttribute("preview_url");
-        const fileUrl = post.getAttribute("file_url");
+        if (posts.length === 0) {
+          gallery.innerHTML = "<p>No results found for that tag.</p>";
+          return;
+        }
 
-        const img = document.createElement("img");
-        img.src = previewUrl;
-        img.alt = "Preview";
-        img.onclick = () => {
-          document.getElementById("modalImg").src = fileUrl;
-          document.getElementById("modal").style.display = "flex";
-        };
-        gallery.appendChild(img);
-      });
+        gallery.innerHTML = "";
+        posts.forEach(post => {
+          const preview = post.getAttribute("preview_url");
+          const full = post.getAttribute("file_url");
+
+          const img = document.createElement("img");
+          img.src = preview;
+          img.alt = "Preview";
+          img.onclick = () => openModal(full);
+
+          gallery.appendChild(img);
+        });
+      } catch (err) {
+        gallery.innerHTML = "<p>❌ Error loading images. Rule34 might be blocking requests or the proxy is down.</p>";
+        console.error(err);
+      }
+    }
+
+    function openModal(url) {
+      const modal = document.getElementById("modal");
+      const modalImg = document.getElementById("modalImg");
+      modalImg.src = url;
+      modal.style.display = "flex";
+    }
+
+    function closeModal() {
+      document.getElementById("modal").style.display = "none";
     }
   </script>
 </body>
